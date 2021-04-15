@@ -22,4 +22,5 @@ void main() async {
     // print(api.progressiveResult.coinList.sublist(100, 110));
     // print(api.progressiveResult.coinList.firstWhere((element) => element.symbol.toUpperCase()=="BTC"));
   });
+
 }
