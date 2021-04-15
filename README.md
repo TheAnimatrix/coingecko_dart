@@ -1,14 +1,20 @@
 # coingecko_dart
 
-C
+A Dart/Flutter Wrapper for the CoinGecko API (V3).
 
-## Getting Started
+What's implemented so far:
+GET /ping
+GET /coins/list
 
-This project is a starting point for a Dart
-[package](https://flutter.dev/developing-packages/),
-a library module containing code that can be shared easily across
-multiple Flutter or Dart projects.
+What's remaining:
+Everything else except the beta features.
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+* USAGE:
+```
+    CoinGeckoApi apiInstance = CoinGeckoApi();
+    CoinGeckoResult pingResult = apiInstance.ping();
+    CoinGeckoResult coinListResult = apiInstance.listCoins();
+```
+
+1. use CoinGeckoResult.isSuccess to verify if the request was successful.
+2. Coin list data of type List<Coin> can be accessed using <coinListResult>.coinList;

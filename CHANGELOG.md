@@ -1,3 +1,4 @@
-## [0.0.1] - TODO: Add release date.
+## [0.0.4] - remove unused flutter dependency, make dart compatible
+## [0.0.3] - /ping and /coins/list api features made available. More to come!
 
-* TODO: Describe initial release.
+* TODO: implement rest of the api, except beta api features.
