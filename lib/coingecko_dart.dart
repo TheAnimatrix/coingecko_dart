@@ -1,10 +1,13 @@
 library coingecko_dart;
 
+import 'package:coingecko_dart/dataClasses/CoinTicker.dart';
 import 'package:coingecko_dart/dataClasses/FullCoin.dart';
 import 'package:coingecko_dart/dataClasses/SimpleToken.dart';
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 
 import 'dataClasses/Coin.dart';
+import 'dataClasses/CoinDataPoint.dart';
 import 'dataClasses/PricedCoin.dart';
 
 /**
@@ -65,11 +68,12 @@ class CoinGeckoApi {
    * * [receiveTimeout] specified in ms controls how long before server sends response once request is accepted
    */
 
-  CoinGeckoApi({int connectTimeout = 10000, int receiveTimeout = 10000}) {
+  CoinGeckoApi({int connectTimeout = 30000, int receiveTimeout = 10000}) {
     var options = BaseOptions(
         baseUrl: 'http://api.coingecko.com/api/v3',
         connectTimeout: connectTimeout,
         receiveTimeout: receiveTimeout,
+        validateStatus: (code) => true,
         responseType: ResponseType.json);
     dio = Dio(options);
   }
@@ -215,12 +219,15 @@ class CoinGeckoApi {
   Future<CoinGeckoResult<List<FullCoin>>> getCoinMarkets(
       {required String vsCurrency,
       List<String> coinIds = const [], //null=all coins
-      CoinCategories category = CoinCategories.ALL, ///filtering by category ignores coinIds.
-      CoinMarketOrder order = CoinMarketOrder.MARKET_CAP_DESC, 
+      CoinCategories category = CoinCategories.ALL,
+
+      ///filtering by category ignores coinIds.
+      CoinMarketOrder order = CoinMarketOrder.MARKET_CAP_DESC,
       int itemsPerPage = 100,
       int page = 1,
       bool sparkline = false,
       List<String> priceChangePercentage = const []
+
       ///possible values 1h, 24h, 7d, 14d, 30d, 200d, 1y
       }) async {
     Map<String, dynamic> queryParams = {
@@ -230,7 +237,8 @@ class CoinGeckoApi {
       'page': page,
       'sparkline': sparkline,
     };
-    if (category != CoinCategories.ALL) queryParams['category'] = category.asString;
+    if (category != CoinCategories.ALL)
+      queryParams['category'] = category.asString;
     if (coinIds.isNotEmpty) queryParams['ids'] = coinIds.join(',');
     if (priceChangePercentage.isNotEmpty)
       queryParams['price_change_percentage'] = priceChangePercentage.join(',');
@@ -239,11 +247,11 @@ class CoinGeckoApi {
 
     if (response.statusCode == 200) {
       List<FullCoin> fullDataCoinList = [];
-      for(var fullCoinJson in response.data){
+      for (var fullCoinJson in response.data) {
         fullDataCoinList.add(FullCoin.fromJson(fullCoinJson));
       }
 
-      if(category != CoinCategories.ALL && coinIds.length>0)
+      if (category != CoinCategories.ALL && coinIds.length > 0)
         fullDataCoinList.retainWhere((element) => coinIds.contains(element.id));
 
       return CoinGeckoResult(fullDataCoinList);
@@ -260,14 +268,43 @@ class CoinGeckoApi {
 
   ///Get current data (name, price, market, ... including exchange tickers) for a coin
   ///@id              *-string       - coin id ex : bitcoin
-  ///@localization     -boolean(d:T  - include all localized languages in response
+  ///@localization     -boolean(d:T)  - include all localized languages in response
   ///@tickers          -boolean(d:T) - include ticker data
   ///@market_data      -boolean(d:T) - include market data
   ///@community_data   -boolean(d:T) - include community data
   ///@developer_data   -boolean(d:T) - include developer data
   ///@sparkline        -boolean(d:F) - inmclude sparkline 7 days data
 
-  getCoinData() {}
+  Future<CoinGeckoResult<Coin>> getCoinData(
+      {required String id,
+      bool localization = false,
+      bool tickers = true,
+      bool marketData = true,
+      bool communityData = true,
+      bool developerData = true,
+      bool sparkline = false}) async {
+    assert(id.isNotEmpty, "coin id cannot be empty");
+    Response response = await dio!.get('/coins/$id', queryParameters: {
+      'id': id,
+      'localization': localization,
+      'tickers': tickers,
+      'market_data': marketData,
+      'community_data': communityData,
+      'developer_data': developerData,
+      'sparkline': sparkline
+    });
+
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(Coin.fromJson(response.data));
+    } else {
+      return CoinGeckoResult(Coin(),
+
+          ///initializing Coin() is essentially a null coin, Coin().isNull = true
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
 
   //? /coins/{id}/tickers
 
@@ -279,17 +316,61 @@ class CoinGeckoApi {
   ///@order                 - valid values: trust_score_desc (default), trust_score_asc and volume_desc
   ///@depth                 - flag to show 2% orderbook depth. valid values: true, false
 
-  getCoinTickers() {}
+  Future<CoinGeckoResult<List<CoinTicker>>> getCoinTickers(
+      {required String id,
+      List<String> exchangeIds = const [],
+      bool includeExchangeLogo = true,
+      int page = 1,
+      TickerOrdering order = TickerOrdering.TRUST_SCORE_DESC,
+      bool depth = true}) async {
+    Response response = await dio!.get('/coins/$id/tickers', queryParameters: {
+      'id': id,
+      'exchange_ids': exchangeIds,
+      'include_exchange_logo': includeExchangeLogo,
+      'page': page,
+      'order': order.asString,
+      'depth': depth
+    });
+
+    if (response.statusCode == 200) {
+      List<CoinTicker> coinTickers = [];
+      for (dynamic tickerJson in response.data["tickers"])
+        coinTickers.add(CoinTicker.fromJson(tickerJson));
+      return CoinGeckoResult(coinTickers);
+    } else {
+      return CoinGeckoResult([],
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
 
   //? /coins/{id}/history
 
   ///Get historical data (name, price, market, stats) at a given date for a coin
   ///@id                   *- string - coin id, ex : bitcoin
-  ///@date                 *- string - dd/mm/yyyy
-  ///@localiation           - boolean- set false to exclude localized languages
+  ///@date                 *- string - dd-mm-yyyy
+  ///@localization           - boolean- set false to exclude localized languages
 
-  getCoinHistory() {}
+  Future<CoinGeckoResult<Coin>> getCoinHistory(
+      {required String id,
+      required DateTime date,
+      bool localization = true}) async {
+    Response response = await dio!.get('/coins/$id/history', queryParameters: {
+      'date': DateFormat('dd-MM-yyyy').format(date),
+      'localization': localization
+    });
 
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(Coin.fromJson(response.data));
+    } else {
+      print(response);
+      return CoinGeckoResult(Coin(),
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
   //? /coins/{id}/market_chart
 
   ///Get historical market data include price, market cap, and 24h volume (granularity auto)
@@ -307,11 +388,31 @@ class CoinGeckoApi {
   ///@interval              - string - interval (daily,minutely,hourly)
   //
   //Defaults to bitcoin-usd-1 day-daily
-  getCoinMarketChart(
-      {String id = "bitcoin",
-      String vs_currency = "usd",
-      int days = 1,
-      String interval = "daily"}) {}
+  Future<CoinGeckoResult<List<CoinDataPoint>>> getCoinMarketChart(
+      {required String id,
+      required String vsCurrency,
+      required int days,
+      ChartTimeInterval interval = ChartTimeInterval.EMPTY}) async {
+    Map<String, dynamic> queryParams = {
+      'vs_currency': vsCurrency,
+      'days': days,
+    };
+    if (interval.isNotEmpty) queryParams['interval'] = interval.asString;
+    Response response =
+        await dio!.get('/coins/$id/market_chart', queryParameters: queryParams);
+    if (response.statusCode == 200) {
+      List<CoinDataPoint> coinDataPoints = [];
+      for (dynamic priceJson in response.data["prices"]) {
+        coinDataPoints.add(CoinDataPoint.fromArray(priceJson));
+      }
+      return CoinGeckoResult(coinDataPoints);
+    } else {
+      return CoinGeckoResult([],
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
 
   //? /coins/{id}/market_chart/range
   ///Get historical market data include price, market cap, and 24h volume (granularity auto)
@@ -328,7 +429,33 @@ class CoinGeckoApi {
   ///
   ///@to                  *- string - to unix timestamp
 
-  getCoinMarketChartRanged() {}
+  Future<CoinGeckoResult<List<CoinDataPoint>>> getCoinMarketChartRanged({
+    required String id,
+    required String vsCurrency,
+    required DateTime from,
+    required DateTime to
+  }) async {
+    assert(to.isAfter(from),"To Date is before From Date!!");
+    Response response = await dio!.get('/coins/$id/market_chart/range',queryParameters: {
+      'vs_currency':vsCurrency,
+      'from':(from.millisecondsSinceEpoch/1000).round(),
+      'to':(to.millisecondsSinceEpoch/1000).round()
+    });
+
+    if(response.statusCode==200)
+    {
+      List<CoinDataPoint> coinDataPoints = [];
+      for (dynamic priceJson in response.data["prices"]) {
+        coinDataPoints.add(CoinDataPoint.fromArray(priceJson));
+      }
+      return CoinGeckoResult(coinDataPoints);
+    }else{
+      return CoinGeckoResult([],
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
 
   //! contract
   //? /coins/{id}/contract/{contract_address}
@@ -357,6 +484,12 @@ class CoinGeckoApi {
 
 //enums
 
+enum TickerOrdering { TRUST_SCORE_ASC, TRUST_SCORE_DESC, VOLUME_DESC }
+
+extension TickerOrderingExt on TickerOrdering {
+  String get asString => this.toString().toLowerCase();
+}
+
 enum CoinCategories { ALL, DEFI, STABLECOIN }
 
 extension CoinCategoriesExt on CoinCategories {
@@ -382,6 +515,19 @@ enum CoinMarketOrder {
   VOLUME_ASC,
   ID_ASC,
   ID_DESC
+}
+
+enum ChartTimeInterval { MINUTELY, HOURLY, DAILY, EMPTY }
+
+extension ChartTimeIntervalExt on ChartTimeInterval {
+  String get asString => this.toString().toLowerCase().capitalize();
+  bool get isNotEmpty => this != ChartTimeInterval.EMPTY;
+}
+
+extension StringExt on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${this.substring(1)}";
+  }
 }
 
 extension CoinMarketOrderExt on CoinMarketOrder {
