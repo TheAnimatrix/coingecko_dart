@@ -10,7 +10,7 @@ void main() async {
     expect(calculator.addOne(0), 1);
   }); */
   CoinGeckoApi api = CoinGeckoApi();
-  test('call /ping and checkk for 200', () async {
+  test('call /ping and check for 200', () async {
     expect(await api.ping(), true);
   });
   await Future.delayed(Duration(seconds: 3));
@@ -25,27 +25,48 @@ void main() async {
   });
   await Future.delayed(Duration(seconds: 3));
 
-  test('call /simple/supported_vs_currencies and check if result contains usd', () async {
+  test('call /simple/supported_vs_currencies and check if result contains usd',
+      () async {
     var result = await api.simpleSupportedVsCurrencies();
     bool testResult = !result.isError && result.data.toString().contains("usd");
-    expect(testResult,true);
+    expect(testResult, true);
   });
 
   await Future.delayed(Duration(seconds: 3));
 
   test('call /simple/price and check if iota price > 0.1 usd', () async {
-    var result = await api.simplePrice(ids: ["iota"], vs_currencies: ["usd","inr","jpy"],includeLastUpdatedAt: true,includeMarketCap: true);
+    var result = await api.simplePrice(
+        ids: ["iota"],
+        vs_currencies: ["usd", "inr", "jpy"],
+        includeLastUpdatedAt: true,
+        includeMarketCap: true);
     print(result.data[0].data);
     print(result.data[0].lastUpdatedAtTimeStamp);
     bool testResult = result.data[0].getPriceIn("usd") > 0.1;
-    expect(testResult,true);
+    expect(testResult, true);
   });
 
   await Future.delayed(Duration(seconds: 3));
 
-  test('call /simple/token_price/{id} with id for aave and check result',() async {
-    var result = await api.simpleTokenPrice(id: 'ethereum', contractAddresses: ['0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9'], vs_currencies: ['inr','usd','eth']);
+  test('call /simple/token_price/{id} with id for aave and check result',
+      () async {
+    var result = await api.simpleTokenPrice(
+        id: 'ethereum',
+        contractAddresses: ['0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9'],
+        vs_currencies: ['inr', 'usd', 'eth']);
     print(result.data[0].data);
   });
 
+  await Future.delayed(Duration(seconds: 3));
+
+  test('call /coin/markets with bitcoin and tether, stablecoin filter on and see if tether is the only result.', () async {
+    var result = await api.getCoinMarkets(
+        vsCurrency: 'usd',
+        coinIds: ['bitcoin', 'iota','tether'],
+        category: CoinCategories.STABLECOIN,
+        sparkline: true,
+        priceChangePercentage: ['1h', '30d']);
+    var testResult = !result.isError && result.data.length == 1 && result.data[0].id == "tether";
+    expect(testResult,true);
+  });
 }
