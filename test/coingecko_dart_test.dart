@@ -114,12 +114,57 @@ void main() async {
         ])); //10th data point value known already
   });
 
+  test('call /coins/{id}/contract_address/{contract_address} for AAVE and check data',()async {
+    var result = await api.getContractTokenData(id: "ethereum", contract_address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9");
+    expect(result.data.json['id'],'aave');
+  });
+
+  test('call /contract/market_chart for AAVE and check if 30th day data point is 30 days before now', () async {
+    var result = await api.getContractMarketChart(id: 'ethereum', contract_address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', vsCurrency: 'usd', days: 30);
+    expect(
+        result.data[0].date?.add(Duration(days: 30)).day, DateTime.now().day);
+  });
+
+  test('call /contract/market_chart/range for AAVE between 10/10/2018 and 11/12/2018 and check data', () async {
+    var result = await api.getContractMarketChartRanged(id: 'ethereum', contract_address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', vsCurrency: 'usd', from: DateTime(2020,12,10), to: DateTime(2020,12,11));
+    expect(result.data[0].price,83.6540712096516);
+  });
+
+  test('call /exchanges/list',() async {
+    var result = await api.getExchanges(page: 1,per_page: 10);
+    expect(result.data[0].id,'binance');
+    expect(result.data[1].id,'gdax');
+    expect(result.data.length,10);
+  });
+  
+  test('call /exchange_rates and check if Indian Rupee is part of the rate list',() async {
+    var result = await api.getExchangeRatesBtc();
+    expect(result.data.getVsList().contains("Indian Rupee"),true);
+  });
+  
+  test('call /search/trending',() async {
+    var result = await api.getSearchTrending();
+    bool testResult = !result.isError && result.data.coins.length > 0;
+    expect(testResult,true);
+  });
+  
+  test('call /global',() async {
+    var result = await api.getGlobalCoins();
+    expect(result.data.activeCryptocurrencies>0,true);
+  });
+  
+  test('call /global/defi',() async {
+    var result = await api.getGlobalDefi();
+    expect(result.data.ethMarketCap!>0,true);
+  });
+  
+
   test('gecko rate limit test', () async {
-    expect(()=> pingContinously(api),throwsA(const TypeMatcher<GeckoRateLimitException>()));
+    expect(()=> spamApiPing(api),throwsA(const TypeMatcher<GeckoRateLimitException>()));
   }, timeout: Timeout(Duration(minutes: 1)));
 }
 
-Future<void> pingContinously(CoinGeckoApi api) async {
+Future<void> spamApiPing(CoinGeckoApi api) async {
   while (true) {
     print("pinging @ ${DateTime.now()} ${api.requestCount}");
     await api.ping();

@@ -44,14 +44,13 @@ class CoinGeckoApi {
   DateTime _firstRequest = DateTime.now();
   bool enableLogging = true;
 
-  /**
-   * ***Init() Initialize API***
-   * 
-   * used to initialize the http client
-   * * [connectTimeout] specified in ms controls how long before connection request is timed out
-   * * [receiveTimeout] specified in ms controls how long before server sends response once request is accepted
-   */
-
+  ///
+  ///***CoinGeckoApi() -> Initialize API***
+  ///
+  ///used to initialize the http client
+  ///* [connectTimeout] specified in ms controls how long before connection request is timed out
+  ///* [receiveTimeout] specified in ms controls how long before server sends response once request is accepted
+  ///
   CoinGeckoApi(
       {int connectTimeout = 30000,
       int receiveTimeout = 10000,
@@ -90,11 +89,11 @@ class CoinGeckoApi {
       ));
   }
 
-  /**
-   * * Coingecko API ( **GET** /ping )
-   * 
-   * used to check Coingecko Server API status
-   */
+  ///
+  ///* Coingecko API ( **GET** /ping )
+  ///
+  ///used to check Coingecko Server API status
+  ///
   Future<bool> ping() async {
     Response response = await dio!
         .get("/ping", options: Options(contentType: 'application/json'));
@@ -197,6 +196,7 @@ class CoinGeckoApi {
   // ! COINS
 
   // ? /coins/list
+  /// @param includePlatformFlag *- bool
   Future<CoinGeckoResult<List<Coin>>> listCoins(
       {bool includePlatformFlag = false}) async {
     Response response = await dio!.get("/coins/list",
@@ -469,6 +469,7 @@ class CoinGeckoApi {
   }
 
   //! contract
+  
   //? /coins/{id}/contract/{contract_address}
   //@id               *- id
   //@contract_address *- contract_address
@@ -629,7 +630,7 @@ class CoinGeckoApi {
 
   //? /global/decentralized_finance_defi
   Future<CoinGeckoResult<GlobalDefi>> getGlobalDefi() async {
-    Response response = await dio!.get('/global');
+    Response response = await dio!.get('/global/decentralized_finance_defi');
 
     if (response.statusCode == 200) {
       return CoinGeckoResult(GlobalDefi.fromJson(response.data));

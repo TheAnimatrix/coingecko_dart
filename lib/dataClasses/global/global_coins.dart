@@ -1,7 +1,7 @@
 import 'package:quiver/core.dart';
 
 class GlobalCoins {
-  int? activeCryptocurrencies;
+  int activeCryptocurrencies;
   int? upcomingIcos;
   int? ongoingIcos;
   int? endedIcos;
@@ -12,10 +12,10 @@ class GlobalCoins {
   double? marketCapChangePercentage24hUsd;
   int? updatedAt;
 
-  bool get isNull => activeCryptocurrencies == null;
+  bool get isNull => markets == null;
 
   GlobalCoins({
-    this.activeCryptocurrencies,
+    this.activeCryptocurrencies=-1,
     this.upcomingIcos,
     this.ongoingIcos,
     this.endedIcos,
@@ -35,7 +35,7 @@ class GlobalCoins {
   factory GlobalCoins.fromJson(Map<String, dynamic> json) {
     json = json['data']??{};
     return GlobalCoins(
-      activeCryptocurrencies: json['active_cryptocurrencies'] as int?,
+      activeCryptocurrencies: json['active_cryptocurrencies'] as int,
       upcomingIcos: json['upcoming_icos'] as int?,
       ongoingIcos: json['ongoing_icos'] as int?,
       endedIcos: json['ended_icos'] as int?,

@@ -3,10 +3,10 @@ import 'package:quiver/core.dart';
 import 'coins.dart';
 
 class SearchTrending {
-	List<Coins>? coins;
+	List<Coins> coins;
 	List<dynamic>? exchanges;
 
-	SearchTrending({this.coins, this.exchanges});
+	SearchTrending({this.coins=const[], this.exchanges});
 
   bool get isNull => coins == null && exchanges == null;
 
@@ -17,8 +17,8 @@ class SearchTrending {
 
 	factory SearchTrending.fromJson(Map<String, dynamic> json) {
 		return SearchTrending(
-			coins: (json['coins'] as List<dynamic>?)
-					?.map((e) => Coins.fromJson(e as Map<String, dynamic>))
+			coins: (json['coins'] as List<dynamic>)
+					.map((e) => Coins.fromJson(e as Map<String, dynamic>))
 					.toList(),
 			exchanges: json['exchanges'] as List<dynamic>?,
 		);
@@ -26,7 +26,7 @@ class SearchTrending {
 
 	Map<String, dynamic> toJson() {
 		return {
-			'coins': coins?.map((e) => e.toJson()).toList(),
+			'coins': coins.map((e) => e.toJson()).toList(),
 			'exchanges': exchanges,
 		};
 	}	

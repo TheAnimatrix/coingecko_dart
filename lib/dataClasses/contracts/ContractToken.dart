@@ -16,6 +16,11 @@ class ContractToken {
     this.json = json;
   }
 
+  @override
+  String toString(){
+    return json.toString();
+  }
+
   bool get isNull => id=="-1" && name=="-1" && symbol=="-1";
 
 }

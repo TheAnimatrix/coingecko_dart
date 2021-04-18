@@ -3,11 +3,11 @@ import 'package:coingecko_dart/helperClass/staticHelpers.dart';
 import 'package:quiver/core.dart';
 
 class GlobalDefi {
-	String? defiMarketCap;
-	String? ethMarketCap;
-	String? defiToEthRatio;
-	String? tradingVolume24h;
-	String? defiDominance;
+	double? defiMarketCap;
+	double? ethMarketCap;
+	double? defiToEthRatio;
+	double? tradingVolume24h;
+	double? defiDominance;
 	String? topCoinName;
 	double? topCoinDefiDominance;
 
@@ -31,13 +31,13 @@ class GlobalDefi {
 	factory GlobalDefi.fromJson(Map<String, dynamic> json) {
     json = json['data']??{};
 		return GlobalDefi(
-			defiMarketCap: json['defi_market_cap'] as String?,
-			ethMarketCap: json['eth_market_cap'] as String?,
-			defiToEthRatio: json['defi_to_eth_ratio'] as String?,
-			tradingVolume24h: json['trading_volume_24h'] as String?,
-			defiDominance: json['defi_dominance'] as String?,
+			defiMarketCap: StaticHelpers.checkDouble(json['defi_market_cap'],null),
+			ethMarketCap: StaticHelpers.checkDouble(json['eth_market_cap'],null),
+			defiToEthRatio: StaticHelpers.checkDouble(json['defi_to_eth_ratio'],null),
+			tradingVolume24h: StaticHelpers.checkDouble(json['trading_volume_24h'],null),
+			defiDominance: StaticHelpers.checkDouble(json['defi_dominance'],null),
 			topCoinName: json['top_coin_name'] as String?,
-			topCoinDefiDominance: StaticHelpers.checkDouble(json['top_coin_defi_dominance'], -1.0),
+			topCoinDefiDominance: StaticHelpers.checkDouble(json['top_coin_defi_dominance'], null),
 		);
 	}
 
@@ -54,11 +54,11 @@ class GlobalDefi {
 	}	
 
 	GlobalDefi copyWith({
-		String? defiMarketCap,
-		String? ethMarketCap,
-		String? defiToEthRatio,
-		String? tradingVolume24h,
-		String? defiDominance,
+		double? defiMarketCap,
+		double? ethMarketCap,
+		double? defiToEthRatio,
+		double? tradingVolume24h,
+		double? defiDominance,
 		String? topCoinName,
 		double? topCoinDefiDominance,
 	}) {
