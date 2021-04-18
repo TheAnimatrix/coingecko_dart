@@ -6,15 +6,15 @@ import 'package:coingecko_dart/dataClasses/coins/SimpleToken.dart';
 import 'package:coingecko_dart/dataClasses/contracts/ContractToken.dart';
 import 'package:coingecko_dart/dataClasses/exchange_rates/exchange_rates.dart';
 import 'package:coingecko_dart/dataClasses/exchanges/exchange.dart';
-import 'package:coingecko_dart/dataClasses/global/models/global_coins.dart';
+import 'package:coingecko_dart/dataClasses/global/global_coins.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
 import 'dataClasses/coins/Coin.dart';
 import 'dataClasses/coins/CoinDataPoint.dart';
 import 'dataClasses/coins/PricedCoin.dart';
-import 'dataClasses/global/models/global_defi.dart';
-import 'dataClasses/search/models/search_trending.dart';
+import 'dataClasses/global/global_defi.dart';
+import 'dataClasses/search/search_trending.dart';
 import 'helperClass/GeckoRateLimitException.dart';
 
 class CoinGeckoResult<E> {
