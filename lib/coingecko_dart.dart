@@ -6,12 +6,15 @@ import 'package:coingecko_dart/dataClasses/coins/SimpleToken.dart';
 import 'package:coingecko_dart/dataClasses/contracts/ContractToken.dart';
 import 'package:coingecko_dart/dataClasses/exchange_rates/exchange_rates.dart';
 import 'package:coingecko_dart/dataClasses/exchanges/exchange.dart';
+import 'package:coingecko_dart/dataClasses/global/models/global_coins.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
 import 'dataClasses/coins/Coin.dart';
 import 'dataClasses/coins/CoinDataPoint.dart';
 import 'dataClasses/coins/PricedCoin.dart';
+import 'dataClasses/global/models/global_defi.dart';
+import 'dataClasses/search/models/search_trending.dart';
 import 'helperClass/GeckoRateLimitException.dart';
 
 class CoinGeckoResult<E> {
@@ -596,10 +599,47 @@ class CoinGeckoApi {
   //! trending
   //? /search/trending
   //
+  Future<CoinGeckoResult<SearchTrending>> getSearchTrending() async {
+    Response response = await dio!.get('/search/trending');
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(SearchTrending.fromJson(response.data));
+    } else {
+      return CoinGeckoResult(SearchTrending(),
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
+  //
   //! global
   //? /global
-  //? /global/decentralized_finance_defi
+  Future<CoinGeckoResult<GlobalCoins>> getGlobalCoins() async {
+    Response response = await dio!.get('/global');
 
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(GlobalCoins.fromJson(response.data));
+    } else {
+      return CoinGeckoResult(GlobalCoins(),
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
+  //? /global/decentralized_finance_defi
+  Future<CoinGeckoResult<GlobalDefi>> getGlobalDefi() async {
+    Response response = await dio!.get('/global');
+
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(GlobalDefi.fromJson(response.data));
+    } else {
+      return CoinGeckoResult(GlobalDefi(),
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
 }
 
 //enums
