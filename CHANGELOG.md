@@ -1,3 +1,4 @@
+## [0.0.6] - completed all /coins endpoints except for /coins/status_update and /coins/OHLC
 ## [0.0.5] - remove unused flutter dependency, make dart compatible
 ## [0.0.3] - /ping and /coins/list api features made available. More to come!
 

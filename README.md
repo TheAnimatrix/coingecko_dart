@@ -16,5 +16,26 @@ Everything else except the beta features.
     CoinGeckoResult coinListResult = apiInstance.listCoins();
 ```
 
-1. use CoinGeckoResult.isSuccess to verify if the request was successful.
-2. Coin list data of type List<Coin> can be accessed using <coinListResult>.coinList;
+Methods implemented so far:
+```
+    ping()                        -> /ping
+    simplePrice()                 -> /simple/price
+    simpleTokenPrice()            -> /simple/token_price/{id}
+    simpleSupportedVsCurrencies() -> /simple/supported_vs_currencies
+    listCoins()                   -> /coins/list
+    getCoinMarkets()              -> /coins/markets
+    getCoinData()                 -> /coins/{id}
+    getCoinTickers()              -> /coins/{id}/tickers
+    getCoinHistory()              -> /coins/{id}/history
+    getCoinMarketChart()          -> /coins/{id}/market_chart
+    getCoinMarketChartRanged()    -> /coins/{id}/market_chart/range
+
+```
+
+Only 11 more methods remaining to implement!!
+
+Then I'll cover the documentation and make it more usable.
+Once that's done i'll come back to the project and finish up the beta api's as well.
+
+1. use CoinGeckoResult.isError to verify if the result was obtained.
+2. if result doesn't have a specially tailored data class (.)raw property to query the object json

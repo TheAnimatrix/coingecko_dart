@@ -1,9 +1,10 @@
 import 'package:coingecko_dart/coingecko_dart.dart';
-import 'package:coingecko_dart/dataClasses/CoinDataPoint.dart';
+import 'package:coingecko_dart/dataClasses/coins/CoinDataPoint.dart';
+import 'package:coingecko_dart/helperClass/GeckoRateLimitException.dart';
 import 'package:test/test.dart';
 
 void main() async {
-  CoinGeckoApi api = CoinGeckoApi();
+  CoinGeckoApi api = CoinGeckoApi(rateLimitManagement: false);
   test('call /ping and check for 200', () async {
     expect(await api.ping(), true);
   });
@@ -77,7 +78,9 @@ void main() async {
     expect(testResult, true);
   });
 
-  test('call /coins/{id}/history and check current price on 02/04/19 and see if it matches with actual value', () async {
+  test(
+      'call /coins/{id}/history and check current price on 02/04/19 and see if it matches with actual value',
+      () async {
     var result = await api.getCoinHistory(
         id: 'bitcoin', date: DateTime(2019, 4, 2)); //02/04/2019
     bool testResult = !result.isError &&
@@ -86,19 +89,39 @@ void main() async {
     expect(testResult, true);
   });
 
-  test('call /coins/{id}/market_chart and see if the 30th day data point contains a date of 30 days before now', () async {
+  test(
+      'call /coins/{id}/market_chart and see if the 30th day data point contains a date of 30 days before now',
+      () async {
     var result = await api.getCoinMarketChart(
         id: "bitcoin", vsCurrency: "usd", days: 30);
     expect(
         result.data[0].date?.add(Duration(days: 30)).day, DateTime.now().day);
   });
 
-  test('call /coins/{id}/market_chart/range and check the price on the 10th data point b/w a well defined range', () async {
+  test(
+      'call /coins/{id}/market_chart/range and check the price on the 10th data point b/w a well defined range',
+      () async {
     var result = await api.getCoinMarketChartRanged(
         id: "bitcoin",
         vsCurrency: "usd",
         from: DateTime(2021, 4, 2),
         to: DateTime(2021, 4, 10));
-    expect(result.data[10],CoinDataPoint.fromArray([1617339741861,59632.02613531098])); //10th data point value known already
+    expect(
+        result.data[10],
+        CoinDataPoint.fromArray([
+          1617339741861,
+          59632.02613531098
+        ])); //10th data point value known already
   });
+
+  test('gecko rate limit test', () async {
+    expect(()=> pingContinously(api),throwsA(const TypeMatcher<GeckoRateLimitException>()));
+  }, timeout: Timeout(Duration(minutes: 1)));
+}
+
+Future<void> pingContinously(CoinGeckoApi api) async {
+  while (true) {
+    print("pinging @ ${DateTime.now()} ${api.requestCount}");
+    await api.ping();
+  }
 }

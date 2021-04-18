@@ -1,40 +1,18 @@
 library coingecko_dart;
 
-import 'package:coingecko_dart/dataClasses/CoinTicker.dart';
-import 'package:coingecko_dart/dataClasses/FullCoin.dart';
-import 'package:coingecko_dart/dataClasses/SimpleToken.dart';
+import 'package:coingecko_dart/dataClasses/coins/CoinTicker.dart';
+import 'package:coingecko_dart/dataClasses/coins/FullCoin.dart';
+import 'package:coingecko_dart/dataClasses/coins/SimpleToken.dart';
+import 'package:coingecko_dart/dataClasses/contracts/ContractToken.dart';
+import 'package:coingecko_dart/dataClasses/exchange_rates/exchange_rates.dart';
+import 'package:coingecko_dart/dataClasses/exchanges/exchange.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
-import 'dataClasses/Coin.dart';
-import 'dataClasses/CoinDataPoint.dart';
-import 'dataClasses/PricedCoin.dart';
-
-/**
- * unused for now
- */
-class CGHttpResponse {
-  var statusCode,
-      statusMessage,
-      data,
-      raw /* raw is response.toString() */,
-      headers,
-      isRedirect,
-      redirects,
-      requestOptions;
-
-  CGHttpResponse.fromDioResponse(Response response) {
-    this.statusCode = response.statusCode;
-    this.statusMessage = response.statusMessage;
-    this.data = response.data;
-    this.headers = response.headers;
-    this.isRedirect = response.isRedirect;
-    this.redirects = response.redirects;
-    this.requestOptions = response.requestOptions;
-  }
-}
-
-///When a response is observed with statusCode = -1 then it's essentially saying "this is just an initialized response"
+import 'dataClasses/coins/Coin.dart';
+import 'dataClasses/coins/CoinDataPoint.dart';
+import 'dataClasses/coins/PricedCoin.dart';
+import 'helperClass/GeckoRateLimitException.dart';
 
 class CoinGeckoResult<E> {
   bool isError = false;
@@ -59,6 +37,9 @@ class CoinGeckoResult<E> {
 
 class CoinGeckoApi {
   Dio? dio;
+  int requestCount = 0;
+  DateTime _firstRequest = DateTime.now();
+  bool enableLogging = true;
 
   /**
    * ***Init() Initialize API***
@@ -68,7 +49,11 @@ class CoinGeckoApi {
    * * [receiveTimeout] specified in ms controls how long before server sends response once request is accepted
    */
 
-  CoinGeckoApi({int connectTimeout = 30000, int receiveTimeout = 10000}) {
+  CoinGeckoApi(
+      {int connectTimeout = 30000,
+      int receiveTimeout = 10000,
+      bool? rateLimitManagement = true,
+      bool enableLogging = true}) {
     var options = BaseOptions(
         baseUrl: 'http://api.coingecko.com/api/v3',
         connectTimeout: connectTimeout,
@@ -76,6 +61,30 @@ class CoinGeckoApi {
         validateStatus: (code) => true,
         responseType: ResponseType.json);
     dio = Dio(options);
+    if (rateLimitManagement != null)
+      dio!.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          requestCount++;
+          if (requestCount == 1) _firstRequest = DateTime.now();
+          if (requestCount >= GeckoRateLimitException.GECKO_REQ_PER_MINUTE &&
+              DateTime.now().difference(_firstRequest).inSeconds <= 60) {
+            if (rateLimitManagement == false)
+              throw new GeckoRateLimitException();
+
+            while (DateTime.now().difference(_firstRequest).inSeconds <= 60) {
+              if (enableLogging)
+                print(
+                    'holding all requests for 2 seconds, difference is ${DateTime.now().difference(_firstRequest).inSeconds}');
+              await Future.delayed(
+                  Duration(seconds: 2)); //hold all requests for 2 seconds.
+            }
+            if (enableLogging) print('requests may pass');
+
+            requestCount = 0;
+          }
+          return handler.next(options);
+        },
+      ));
   }
 
   /**
@@ -429,27 +438,26 @@ class CoinGeckoApi {
   ///
   ///@to                  *- string - to unix timestamp
 
-  Future<CoinGeckoResult<List<CoinDataPoint>>> getCoinMarketChartRanged({
-    required String id,
-    required String vsCurrency,
-    required DateTime from,
-    required DateTime to
-  }) async {
-    assert(to.isAfter(from),"To Date is before From Date!!");
-    Response response = await dio!.get('/coins/$id/market_chart/range',queryParameters: {
-      'vs_currency':vsCurrency,
-      'from':(from.millisecondsSinceEpoch/1000).round(),
-      'to':(to.millisecondsSinceEpoch/1000).round()
+  Future<CoinGeckoResult<List<CoinDataPoint>>> getCoinMarketChartRanged(
+      {required String id,
+      required String vsCurrency,
+      required DateTime from,
+      required DateTime to}) async {
+    assert(to.isAfter(from), "To Date is before From Date!!");
+    Response response =
+        await dio!.get('/coins/$id/market_chart/range', queryParameters: {
+      'vs_currency': vsCurrency,
+      'from': (from.millisecondsSinceEpoch / 1000).round(),
+      'to': (to.millisecondsSinceEpoch / 1000).round()
     });
 
-    if(response.statusCode==200)
-    {
+    if (response.statusCode == 200) {
       List<CoinDataPoint> coinDataPoints = [];
       for (dynamic priceJson in response.data["prices"]) {
         coinDataPoints.add(CoinDataPoint.fromArray(priceJson));
       }
       return CoinGeckoResult(coinDataPoints);
-    }else{
+    } else {
       return CoinGeckoResult([],
           errorCode: response.statusCode ?? -1,
           errorMessage: (response.statusMessage ?? "") + " " + response.data,
@@ -459,20 +467,132 @@ class CoinGeckoApi {
 
   //! contract
   //? /coins/{id}/contract/{contract_address}
+  //@id               *- id
+  //@contract_address *- contract_address
+  Future<CoinGeckoResult<ContractToken>> getContractTokenData(
+      {required String id, required String contract_address}) async {
+    Response response = await dio!.get('/coins/$id/contract/$contract_address');
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(ContractToken.fromJson(response.data));
+    } else {
+      return CoinGeckoResult(ContractToken(),
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
   //? /coins/{id}/contract/{contract_address}/market_chart
+  ///@id               *- id
+  ///@contract_address *- string
+  ///@vs_currency      *- string
+  ///@days             *- int
+  Future<CoinGeckoResult<List<CoinDataPoint>>> getContractMarketChart(
+      {required String id,
+      required String contract_address,
+      required String vsCurrency,
+      required int days}) async {
+    Map<String, dynamic> queryParams = {
+      'vs_currency': vsCurrency,
+      'days': days,
+    };
+    Response response = await dio!.get(
+        '/coins/$id/contract/$contract_address/market_chart',
+        queryParameters: queryParams);
+    if (response.statusCode == 200) {
+      List<CoinDataPoint> coinDataPoints = [];
+      for (dynamic priceJson in response.data["prices"]) {
+        coinDataPoints.add(CoinDataPoint.fromArray(priceJson));
+      }
+      return CoinGeckoResult(coinDataPoints);
+    } else {
+      return CoinGeckoResult([],
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
   //? /coins/{id}/contract/{contract_address}/market_chart/range
-  //
+  ///@id                *- String   - (only ethereum allowed for now) otherwise 500 error
+  ///@contract_address  *- String
+  ///@vs_currency       *- String
+  ///@from              *- int
+  ///@to                *- int
+  Future<CoinGeckoResult<List<CoinDataPoint>>> getContractMarketChartRanged(
+      {required String id,
+      required String contract_address,
+      required String vsCurrency,
+      required DateTime from,
+      required DateTime to}) async {
+    assert(to.isAfter(from), "To Date is before From Date!!");
+    Response response = await dio!.get(
+        '/coins/$id/contract/$contract_address/market_chart/range',
+        queryParameters: {
+          'vs_currency': vsCurrency,
+          'from': (from.millisecondsSinceEpoch / 1000).round(),
+          'to': (to.millisecondsSinceEpoch / 1000).round()
+        });
+
+    if (response.statusCode == 200) {
+      List<CoinDataPoint> coinDataPoints = [];
+      for (dynamic priceJson in response.data["prices"]) {
+        coinDataPoints.add(CoinDataPoint.fromArray(priceJson));
+      }
+      return CoinGeckoResult(coinDataPoints);
+    } else {
+      return CoinGeckoResult([],
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
   //! exchanges(beta)
   //? /exchanges
-  //
-  //! events
-  //? /events
-  //? /events/countries
-  //? /events/types
-  //
+
+  //? /exchanges
+  ///@page     - int
+  ///@per_page - int
+  Future<CoinGeckoResult<List<Exchange>>> getExchanges(
+      {int page = 1, int per_page = 100}) async {
+    Response response = await dio!.get('/exchanges',
+        queryParameters: {"page": page, "per_page": per_page});
+
+    if (response.statusCode == 200) {
+      List<Exchange> exchangeList = [];
+      for (dynamic exchangeJson in response.data) {
+        exchangeList.add(Exchange.fromJson(exchangeJson));
+      }
+      return CoinGeckoResult(exchangeList);
+    } else {
+      return CoinGeckoResult([],
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
   //! exchange rates
   //? /exchange_rates
-  //
+  ///no params
+  ///Get BTC-to-Currency exchange rates
+  ///
+  ///use returnedValue.getVsList() to obtain other currency names available in list
+  ///
+  ///use returnedValue.getRateOf(input_currency) to obtain btc's value in the input currency as an instance of `ExchangeRate`
+  Future<CoinGeckoResult<ExchangeRates>> getExchangeRatesBtc() async {
+    Response response = await dio!.get('/exchange_rates');
+    if (response.statusCode == 200) {
+      return CoinGeckoResult(ExchangeRates.fromJson(response.data));
+    } else {
+      return CoinGeckoResult(ExchangeRates(),
+          errorCode: response.statusCode ?? -1,
+          errorMessage: (response.statusMessage ?? "") + " " + response.data,
+          isError: true);
+    }
+  }
+
   //! trending
   //? /search/trending
   //
