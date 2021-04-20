@@ -1,10 +1,10 @@
 class Coin {
-  Map<String, dynamic> raw = {};
+  Map<String, dynamic> json = {};
   String id = "-1", symbol = "-1", name = "-1";
 
   Coin(
       {String id = "bitcoin", String symbol = "btc", String name = "bitcoin"}) {
-    raw = {"id": id, "symbol": symbol, "name": name};
+    json = {"id": id, "symbol": symbol, "name": name};
     this.id = id;
     this.symbol = symbol;
     this.name = name;
@@ -16,17 +16,14 @@ class Coin {
   }
 
   Coin.fromJson(Map<String, dynamic> json) {
-    raw = json;
+    json = json;
     id = json['id'];
     symbol = json['symbol'];
     name = json['name'];
   }
 
   Map<String, dynamic> toJson() {
-    raw['id'] = id;
-    raw['symbol'] = symbol;
-    raw['name'] = name;
-    return raw;
+    return json;
   }
 
   bool isError(){

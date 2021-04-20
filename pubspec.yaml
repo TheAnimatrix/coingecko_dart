@@ -1,6 +1,6 @@
 name: coingecko_dart
 description: A Dart/Flutter Wrapper for the CoinGecko API (V3)
-version: 0.0.6
+version: 0.0.9
 homepage: https://github.com/TheAnimatrix/coingecko_dart
 
 environment:

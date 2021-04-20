@@ -94,10 +94,13 @@ class CoinGeckoApi {
   ///
   ///used to check Coingecko Server API status
   ///
-  Future<bool> ping() async {
+  Future<CoinGeckoResult<bool>> ping() async {
     Response response = await dio!
         .get("/ping", options: Options(contentType: 'application/json'));
-    return response.statusCode == 200;
+    return CoinGeckoResult(response.statusCode == 200,
+        errorCode: response.statusCode ?? -1,
+        errorMessage: (response.statusMessage ?? "") + " " + response.data,
+        isError: response.statusCode != 200);
   }
 
   // ! SIMPLE
@@ -238,7 +241,7 @@ class CoinGeckoApi {
       int itemsPerPage = 100,
       int page = 1,
       bool sparkline = false,
-      List<String> priceChangePercentage = const []
+      List<MarketInterval> priceChangePercentage = const []
 
       ///possible values 1h, 24h, 7d, 14d, 30d, 200d, 1y
       }) async {
@@ -253,7 +256,7 @@ class CoinGeckoApi {
       queryParams['category'] = category.asString;
     if (coinIds.isNotEmpty) queryParams['ids'] = coinIds.join(',');
     if (priceChangePercentage.isNotEmpty)
-      queryParams['price_change_percentage'] = priceChangePercentage.join(',');
+      queryParams['price_change_percentage'] = priceChangePercentage.map((e)=>e.asString).join(',');
     Response response =
         await dio!.get('/coins/markets', queryParameters: queryParams);
 
@@ -469,7 +472,7 @@ class CoinGeckoApi {
   }
 
   //! contract
-  
+
   //? /coins/{id}/contract/{contract_address}
   //@id               *- id
   //@contract_address *- contract_address
@@ -598,6 +601,7 @@ class CoinGeckoApi {
   }
 
   //! trending
+
   //? /search/trending
   //
   Future<CoinGeckoResult<SearchTrending>> getSearchTrending() async {
@@ -679,6 +683,12 @@ enum CoinMarketOrder {
 }
 
 enum ChartTimeInterval { MINUTELY, HOURLY, DAILY, EMPTY }
+
+enum MarketInterval { T_1H, T_24H, T_7D, T_14D, T_30D, T_200D, T_1Y }
+
+extension MarketIntervalExt on MarketInterval{
+  String get asString => this.toString().substring(2).toLowerCase();
+}
 
 extension ChartTimeIntervalExt on ChartTimeInterval {
   String get asString => this.toString().toLowerCase().capitalize();

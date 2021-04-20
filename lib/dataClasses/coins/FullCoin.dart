@@ -3,7 +3,7 @@ import 'package:coingecko_dart/helperClass/staticHelpers.dart';
 import 'Coin.dart';
 
 class FullCoin extends Coin {
-  final Map<String, dynamic> raw;
+  final Map<String, dynamic> json;
   final String? image;
   final double? currentPrice,
       marketCap,
@@ -34,7 +34,7 @@ class FullCoin extends Coin {
   List<double> sparkline7d = const[];
 
   FullCoin.fromJson(Map<String, dynamic> json)
-      : raw = json,
+      : json = json,
         image = json['image'],
         currentPrice = StaticHelpers.checkDouble(json['current_price'], -1.0),
         marketCap = StaticHelpers.checkDouble(json['market_cap'], -1.0),

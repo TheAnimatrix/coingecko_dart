@@ -53,7 +53,7 @@ void main() async {
         coinIds: ['bitcoin', 'iota', 'tether'],
         category: CoinCategories.STABLECOIN,
         sparkline: true,
-        priceChangePercentage: ['1h', '30d']);
+        priceChangePercentage: [MarketInterval.T_1H, MarketInterval.T_24H]);
     var testResult = !result.isError &&
         result.data.length == 1 &&
         result.data[0].id == "tether";
@@ -65,7 +65,7 @@ void main() async {
       () async {
     var result = await api.getCoinData(
         id: 'bitcoin', localization: true, sparkline: true);
-    expect(result.data.raw['block_time_in_minutes'], 10);
+    expect(result.data.json['block_time_in_minutes'], 10);
   });
 
   test('call /coins/{id}/tickers with "bitcoin and check if base is BTC',
@@ -84,7 +84,7 @@ void main() async {
     var result = await api.getCoinHistory(
         id: 'bitcoin', date: DateTime(2019, 4, 2)); //02/04/2019
     bool testResult = !result.isError &&
-        result.data.raw['market_data']['current_price']['usd'] ==
+        result.data.json['market_data']['current_price']['usd'] ==
             4146.321927706636; //actual value
     expect(testResult, true);
   });
@@ -93,7 +93,7 @@ void main() async {
       'call /coins/{id}/market_chart and see if the 30th day data point contains a date of 30 days before now',
       () async {
     var result = await api.getCoinMarketChart(
-        id: "bitcoin", vsCurrency: "usd", days: 30);
+        id: "bitcoin", vsCurrency: "usd", days: 30,interval: ChartTimeInterval.DAILY);
     expect(
         result.data[0].date?.add(Duration(days: 30)).day, DateTime.now().day);
   });
@@ -114,53 +114,72 @@ void main() async {
         ])); //10th data point value known already
   });
 
-  test('call /coins/{id}/contract_address/{contract_address} for AAVE and check data',()async {
-    var result = await api.getContractTokenData(id: "ethereum", contract_address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9");
-    expect(result.data.json['id'],'aave');
+  test(
+      'call /coins/{id}/contract_address/{contract_address} for AAVE and check data',
+      () async {
+    var result = await api.getContractTokenData(
+        id: "ethereum",
+        contract_address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9");
+    expect(result.data.json['id'], 'aave');
   });
 
-  test('call /contract/market_chart for AAVE and check if 30th day data point is 30 days before now', () async {
-    var result = await api.getContractMarketChart(id: 'ethereum', contract_address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', vsCurrency: 'usd', days: 30);
+  test(
+      'call /contract/market_chart for AAVE and check if 30th day data point is 30 days before now',
+      () async {
+    var result = await api.getContractMarketChart(
+        id: 'ethereum',
+        contract_address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9',
+        vsCurrency: 'usd',
+        days: 30);
     expect(
         result.data[0].date?.add(Duration(days: 30)).day, DateTime.now().day);
   });
 
-  test('call /contract/market_chart/range for AAVE between 10/10/2018 and 11/12/2018 and check data', () async {
-    var result = await api.getContractMarketChartRanged(id: 'ethereum', contract_address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', vsCurrency: 'usd', from: DateTime(2020,12,10), to: DateTime(2020,12,11));
-    expect(result.data[0].price,83.6540712096516);
+  test(
+      'call /contract/market_chart/range for AAVE between 10/10/2018 and 11/12/2018 and check data',
+      () async {
+    var result = await api.getContractMarketChartRanged(
+        id: 'ethereum',
+        contract_address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9',
+        vsCurrency: 'usd',
+        from: DateTime(2020, 12, 10),
+        to: DateTime(2020, 12, 11));
+    expect(result.data[0].price, 83.6540712096516);
   });
 
-  test('call /exchanges/list',() async {
-    var result = await api.getExchanges(page: 1,per_page: 10);
-    expect(result.data[0].id,'binance');
-    expect(result.data[1].id,'gdax');
-    expect(result.data.length,10);
+  test('call /exchanges/list', () async {
+    var result = await api.getExchanges(page: 1, per_page: 10);
+    expect(result.data[0].id, 'binance');
+    expect(result.data[1].id, 'gdax');
+    expect(result.data.length, 10);
   });
-  
-  test('call /exchange_rates and check if Indian Rupee is part of the rate list',() async {
+
+  test(
+      'call /exchange_rates and check if Indian Rupee is part of the rate list',
+      () async {
     var result = await api.getExchangeRatesBtc();
-    expect(result.data.getVsList().contains("Indian Rupee"),true);
+    expect(result.data.getVsList().contains("Indian Rupee"), true);
   });
-  
-  test('call /search/trending',() async {
+
+  test('call /search/trending', () async {
     var result = await api.getSearchTrending();
     bool testResult = !result.isError && result.data.coins.length > 0;
-    expect(testResult,true);
+    expect(testResult, true);
   });
-  
-  test('call /global',() async {
+
+  test('call /global', () async {
     var result = await api.getGlobalCoins();
-    expect(result.data.activeCryptocurrencies>0,true);
+    expect(result.data.activeCryptocurrencies > 0, true);
   });
-  
-  test('call /global/defi',() async {
+
+  test('call /global/defi', () async {
     var result = await api.getGlobalDefi();
-    expect(result.data.ethMarketCap!>0,true);
+    expect(result.data.ethMarketCap! > 0, true);
   });
-  
 
   test('gecko rate limit test', () async {
-    expect(()=> spamApiPing(api),throwsA(const TypeMatcher<GeckoRateLimitException>()));
+    expect(() => spamApiPing(api),
+        throwsA(const TypeMatcher<GeckoRateLimitException>()));
   }, timeout: Timeout(Duration(minutes: 1)));
 }
 
