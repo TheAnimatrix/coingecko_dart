@@ -111,7 +111,7 @@ _[Note: Data class is not fully implemented, use ( coin.json[ ] ) property inste
 ```
 
 
-##EXAMPLES
+## EXAMPLES
 
 #### SIMPLE_EXAMPLE
 
