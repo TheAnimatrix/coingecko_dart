@@ -57,7 +57,7 @@ class CoinGeckoApi {
       bool? rateLimitManagement = true,
       bool enableLogging = true}) {
     var options = BaseOptions(
-        baseUrl: 'http://api.coingecko.com/api/v3',
+        baseUrl: 'https://api.coingecko.com/api/v3',
         connectTimeout: connectTimeout,
         receiveTimeout: receiveTimeout,
         validateStatus: (code) => true,
