@@ -178,6 +178,28 @@ class CoinGeckoApi {
     }
   }
 
+  // ? /coins/{id}/ohlc
+  Future<CoinGeckoResult<dynamic>> ohlc(
+      {required String id,
+        required List<String> vs_currencies,
+        required int days,}) async {
+
+    Response response =
+    await dio!.get('/coins/$id/ohlc', queryParameters: {
+      "vs_currency": vs_currencies.join(','),
+      "days": days,
+    });
+
+    if (response.statusCode == 200) {
+      return CoinGeckoResult<dynamic>(response.data);
+    } else {
+      return CoinGeckoResult([],
+          errorMessage: "failed with code ${response.statusCode}",
+          errorCode: response.statusCode ?? -1,
+          isError: true);
+    }
+  }
+
   // ? /simple/supported_vs_currencies
   Future<CoinGeckoResult<List<String>>> simpleSupportedVsCurrencies() async {
     Response response = await dio!.get('/simple/supported_vs_currencies',
