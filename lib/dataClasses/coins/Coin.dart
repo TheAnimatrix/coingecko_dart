@@ -15,8 +15,8 @@ class Coin {
     return "ID: $id, SYMBOL: $symbol, NAME: $name";
   }
 
-  Coin.fromJson(Map<String, dynamic> json) {
-    json = json;
+  Coin.fromJson(Map<String, dynamic> jsonData) {
+    json = Map<String, dynamic>.from(jsonData);
     id = json['id'];
     symbol = json['symbol'];
     name = json['name'];
